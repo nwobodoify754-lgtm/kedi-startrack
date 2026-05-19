@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KEDI StarTrack — Downline Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07080f; --surface:#0e0f1e; --card:#13142a; --border:#22244a;
+  --accent:#c9a84c; --accent2:#7c5cbf;
+  --c3:#4fc3f7; --c4:#29b6f6; --c5:#66bb6a; --c6:#ffa726;
+  --c7:#ef5350; --c8:#ab47bc;
+  --cm1:#ff7043; --cm2:#ff8a65; --cm3:#ffb300;
+  --cd1:#26c6da; --cd2:#00bcd4; --cd3:#00acc1; --cd4:#0097a7; --cd5:#00838f;
+  --chc:#c9a84c;
+  --text:#e8e8f5; --muted:#5a5a80; --danger:#ef5350; --gdrive:#34a853;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(124,92,191,.08) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(201,168,76,.06) 0%,transparent 55%);pointer-events:none;z-index:0;}
+
+header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;background:rgba(7,8,15,.95);backdrop-filter:blur(8px);}
+.logo{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;letter-spacing:3px;color:var(--accent);text-shadow:0 0 30px rgba(201,168,76,.35);}
+.logo span{color:var(--accent2);}
+.logo small{display:block;font-size:0.47rem;letter-spacing:4px;color:var(--muted);font-weight:400;margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+.indicator{font-family:'Orbitron',monospace;font-size:0.5rem;letter-spacing:1px;padding:3px 10px;border:1px solid var(--border);border-radius:20px;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--muted);transition:background .4s;flex-shrink:0;}
+.dot.green{background:var(--gdrive);}
+.dot.yellow{background:var(--accent);}
+.dot.red{background:var(--danger);}
+
+.drive-btn-header{font-family:'Orbitron',monospace;font-size:0.5rem;letter-spacing:1px;padding:4px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--gdrive);color:var(--gdrive);background:transparent;transition:all .2s;white-space:nowrap;}
+.drive-btn-header:hover{background:var(--gdrive);color:#fff;}
+.drive-btn-header:disabled{opacity:.4;cursor:default;}
+
+.legend{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.badge{font-family:'Orbitron',monospace;font-size:0.5rem;padding:2px 7px;border-radius:20px;border:1px solid currentColor;letter-spacing:1px;white-space:nowrap;}
+
+.app{position:relative;z-index:1;display:flex;flex:1;overflow:hidden;}
+
+.sidebar{width:292px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px;background:rgba(13,14,30,.5);}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;}
+.panel-title{font-family:'Orbitron',monospace;font-size:0.54rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:11px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 6px;text-align:center;}
+.stat-val{font-family:'Orbitron',monospace;font-size:1.15rem;font-weight:700;color:var(--accent);}
+.stat-lbl{font-size:0.6rem;color:var(--muted);letter-spacing:1px;margin-top:2px;}
+
+/* DRIVE PANEL */
+.drive-panel{background:rgba(52,168,83,.06);border:1px solid rgba(52,168,83,.25);border-radius:12px;padding:13px;}
+.drive-status-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.drive-account{font-size:0.78rem;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.drive-account small{display:block;font-size:0.62rem;color:var(--muted);}
+.drive-actions{display:flex;flex-direction:column;gap:6px;}
+.btn-drive{width:100%;padding:8px;border:none;border-radius:7px;font-family:'Orbitron',monospace;font-size:0.56rem;letter-spacing:2px;cursor:pointer;transition:all .2s;}
+.btn-drive-signin{background:linear-gradient(135deg,#1e7e34,#0d4a28);color:#fff;border:1px solid var(--gdrive);}
+.btn-drive-signin:hover{opacity:.85;}
+.btn-drive-save{background:transparent;border:1px solid var(--gdrive);color:var(--gdrive);}
+.btn-drive-save:hover{background:var(--gdrive);color:#fff;}
+.btn-drive-load{background:transparent;border:1px solid var(--accent2);color:var(--accent2);}
+.btn-drive-load:hover{background:var(--accent2);color:#fff;}
+.btn-drive-signout{background:transparent;border:1px solid var(--muted);color:var(--muted);font-size:0.5rem;}
+.btn-drive-signout:hover{border-color:var(--danger);color:var(--danger);}
+.btn-drive:disabled{opacity:.35;cursor:default;pointer-events:none;}
+.drive-last{font-size:0.65rem;color:var(--muted);text-align:center;margin-top:6px;}
+
+.form-row{margin-bottom:9px;}
+label{display:block;font-size:0.68rem;color:var(--muted);letter-spacing:1px;margin-bottom:3px;}
+input,select{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:7px;font-family:'Rajdhani',sans-serif;font-size:0.88rem;outline:none;transition:border-color .2s;}
+input:focus,select:focus{border-color:var(--accent2);}
+select option{background:var(--surface);}
+.btn{width:100%;padding:9px;border:none;border-radius:8px;font-family:'Orbitron',monospace;font-size:0.58rem;letter-spacing:2px;cursor:pointer;transition:all .2s;margin-top:4px;}
+.btn-add{background:linear-gradient(135deg,var(--accent2),#4a2d8e);color:#fff;}
+.btn-add:hover{opacity:.85;transform:translateY(-1px);}
+.btn-share{background:linear-gradient(135deg,#1a6b3a,#0d4a28);color:#fff;border:1px solid #2d8a4e;}
+.btn-share:hover{opacity:.85;transform:translateY(-1px);}
+.btn-clear{background:transparent;border:1px solid var(--danger);color:var(--danger);}
+.btn-clear:hover{background:var(--danger);color:#fff;}
+.btn-export{background:transparent;border:1px solid var(--accent);color:var(--accent);}
+.btn-export:hover{background:rgba(201,168,76,.15);}
+
+.member-list{display:flex;flex-direction:column;gap:5px;max-height:220px;overflow-y:auto;}
+.member-list::-webkit-scrollbar{width:3px;}
+.member-list::-webkit-scrollbar-thumb{background:var(--border);}
+.mem-item{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 9px;display:flex;align-items:center;gap:7px;cursor:pointer;transition:border-color .2s;}
+.mem-item:hover{border-color:var(--accent2);}
+.mem-info{flex:1;min-width:0;}
+.mem-name{font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mem-sub{font-size:0.63rem;color:var(--muted);margin-top:1px;}
+.mem-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;border-radius:4px;transition:color .2s;flex-shrink:0;}
+.mem-del:hover{color:var(--danger);}
+
+.rules{font-size:0.7rem;color:var(--muted);line-height:1.9;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 11px;}
+.rules b{color:var(--text);}
+.tier-label{color:var(--accent);font-family:'Orbitron',monospace;font-size:0.56rem;letter-spacing:2px;display:block;margin-top:7px;margin-bottom:2px;}
+.howto{font-size:0.72rem;color:var(--muted);line-height:1.9;background:rgba(124,92,191,.07);border:1px solid rgba(124,92,191,.2);border-radius:8px;padding:9px 11px;}
+.howto b{color:var(--accent);}
+
+.progress-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:0.72rem;color:var(--muted);line-height:1.8;}
+.progress-box b{color:var(--text);}
+.progress-box .prk{color:var(--accent);font-family:'Orbitron',monospace;font-size:0.6rem;}
+.leg-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.leg-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.leg-bar{height:100%;border-radius:3px;transition:width .4s;}
+.leg-ok{color:var(--c5);}
+.leg-no{color:var(--danger);}
+
+.tree-area{flex:1;overflow:auto;padding:36px;display:flex;align-items:flex-start;justify-content:center;}
+.tree-area::-webkit-scrollbar{width:6px;height:6px;}
+.tree-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.tree-root{display:flex;flex-direction:column;align-items:center;}
+.node-wrap{display:flex;flex-direction:column;align-items:center;}
+.node-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:12px 15px;min-width:150px;max-width:182px;text-align:center;cursor:pointer;position:relative;transition:all .25s;user-select:none;}
+.node-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.5);}
+.node-card.root-card{min-width:170px;max-width:200px;}
+.node-rank{font-family:'Orbitron',monospace;font-size:0.52rem;letter-spacing:1px;padding:2px 9px;border-radius:20px;border:1px solid currentColor;display:inline-block;margin-bottom:7px;}
+.node-name{font-size:0.85rem;font-weight:700;line-height:1.3;margin-bottom:2px;}
+.node-id{font-family:'Orbitron',monospace;font-size:0.5rem;color:var(--muted);letter-spacing:1px;margin-bottom:3px;}
+.node-pv{font-size:0.7rem;color:var(--accent);}
+.node-pv span{color:var(--muted);}
+.expand-hint{margin-top:5px;font-size:0.56rem;color:var(--muted);font-family:'Orbitron',monospace;letter-spacing:1px;}
+.vline{width:2px;height:30px;background:var(--border);margin:0 auto;}
+.hline{height:2px;background:var(--border);}
+.children-row{display:flex;flex-direction:row;align-items:flex-start;gap:18px;justify-content:center;}
+.child-col{display:flex;flex-direction:column;align-items:center;}
+.empty{text-align:center;color:var(--muted);padding:80px 20px;font-size:.88rem;letter-spacing:1px;}
+.empty-icon{font-size:3rem;opacity:.2;margin-bottom:14px;}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--card);border:1px solid var(--accent2);color:var(--text);padding:10px 18px;border-radius:10px;font-size:.82rem;z-index:999;animation:fadeUp .3s ease,fadeOut .3s ease 2.5s forwards;pointer-events:none;}
+.toast.success{border-color:var(--c5);}
+.toast.warn{border-color:var(--danger);}
+.toast.drive{border-color:var(--gdrive);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeOut{to{opacity:0}}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:900;display:flex;align-items:center;justify-content:center;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 24px;max-width:360px;width:92%;text-align:center;}
+.modal h3{font-family:'Orbitron',monospace;font-size:.78rem;letter-spacing:2px;margin-bottom:12px;}
+.modal h3.danger{color:var(--danger);}
+.modal h3.share{color:var(--c5);}
+.modal p{font-size:.84rem;color:var(--muted);line-height:1.75;margin-bottom:18px;}
+.modal input{margin-bottom:14px;}
+.modal-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.modal-btns button{padding:9px 20px;border-radius:8px;font-family:'Orbitron',monospace;font-size:.58rem;letter-spacing:2px;cursor:pointer;border:none;}
+.mbtn-cancel{background:var(--surface);color:var(--text);border:1px solid var(--border)!important;}
+.mbtn-confirm{background:var(--danger);color:#fff;}
+.mbtn-share{background:linear-gradient(135deg,#1a6b3a,#0d4a28);color:#fff;}
+
+@media(max-width:700px){.app{flex-direction:column;}.sidebar{width:100%;max-height:52vh;}.tree-area{padding:18px 8px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KEDI <span>STAR</span>TRACK<small>DOWNLINE MANAGER</small></div>
+  <div class="header-right">
+    <div class="indicator" id="localIndicator">
+      <div class="dot" id="localDot"></div>
+      <span id="localLabel">LOCAL</span>
+    </div>
+    <div class="indicator" id="driveIndicator" style="border-color:rgba(52,168,83,.3)">
+      <div class="dot" id="driveDot"></div>
+      <span id="driveLabel">DRIVE: NOT CONNECTED</span>
+    </div>
+    <button class="drive-btn-header" id="headerDriveBtn" onclick="driveSignIn()" title="Connect Google Drive">
+      ☁ CONNECT DRIVE
+    </button>
+    <div class="legend">
+      <span class="badge" style="color:var(--c3)">★3 C</span>
+      <span class="badge" style="color:var(--c5)">★5 C</span>
+      <span class="badge" style="color:var(--c7)">★7 C</span>
+      <span class="badge" style="color:var(--c8)">★8 C</span>
+      <span class="badge" style="color:var(--cm3)">MGR</span>
+      <span class="badge" style="color:var(--cd1)">DIR</span>
+      <span class="badge" style="color:var(--chc)">HON</span>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <div class="sidebar">
+
+    <div class="panel">
+      <div class="panel-title">Network Stats</div>
+      <div class="stats-grid">
+        <div class="stat"><div class="stat-val" id="sTotalM">0</div><div class="stat-lbl">MEMBERS</div></div>
+        <div class="stat"><div class="stat-val" id="sTotalPV">0</div><div class="stat-lbl">TOTAL PV</div></div>
+        <div class="stat"><div class="stat-val" id="sTopRank">—</div><div class="stat-lbl">TOP RANK</div></div>
+        <div class="stat"><div class="stat-val" id="sStar4">0</div><div class="stat-lbl">★4+ COUNT</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Root Member Progress</div>
+      <div id="progressBox" class="progress-box">Loading...</div>
+    </div>
+
+    <!-- GOOGLE DRIVE PANEL -->
+    <div class="drive-panel">
+      <div class="panel-title" style="color:var(--gdrive)">☁ Google Drive Sync</div>
+      <div id="driveSignedOut">
+        <p style="font-size:.75rem;color:var(--muted);line-height:1.7;margin-bottom:10px">
+          Sign in to auto-sync your network to Google Drive. Your data will be safe even if you clear your browser.
+        </p>
+        <button class="btn-drive btn-drive-signin" onclick="driveSignIn()">⬆ SIGN IN WITH GOOGLE</button>
+      </div>
+      <div id="driveSignedIn" style="display:none">
+        <div class="drive-status-row">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--gdrive);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">☁</div>
+          <div class="drive-account">
+            <span id="driveUserName">Connected</span>
+            <small id="driveUserEmail"></small>
+          </div>
+        </div>
+        <div class="drive-actions">
+          <button class="btn-drive btn-drive-save" id="btnDriveSave" onclick="driveSaveNow()">⬆ SAVE TO DRIVE NOW</button>
+          <button class="btn-drive btn-drive-load" id="btnDriveLoad" onclick="driveLoadNow()">⬇ LOAD FROM DRIVE</button>
+          <button class="btn-drive btn-drive-signout" onclick="driveSignOut()">DISCONNECT DRIVE</button>
+        </div>
+        <div class="drive-last" id="driveLastSync">Never synced</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Add New Member</div>
+      <div class="form-row"><label>MEMBER ID</label><input id="fId" placeholder="e.g. 1181053" autocomplete="off"/></div>
+      <div class="form-row"><label>FULL NAME</label><input id="fName" placeholder="e.g. Nwafor Kenneth" autocomplete="off"/></div>
+      <div class="form-row"><label>PERSONAL PV (CPPV)</label><input id="fPV" type="number" placeholder="e.g. 250" min="0"/></div>
+      <div class="form-row"><label>SPONSOR (UPLINE)</label><select id="fSponsor"><option value="">— Select Sponsor —</option></select></div>
+      <button class="btn btn-add" onclick="addMember()">+ ADD MEMBER</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Share &amp; Export</div>
+      <button class="btn btn-share" onclick="showShareModal()" style="margin-bottom:8px">⬆ CREATE BLANK COPY TO SHARE</button>
+      <button class="btn btn-export" onclick="exportCSV()" style="margin-bottom:8px">⬇ EXPORT TO CSV</button>
+      <button class="btn btn-clear" onclick="confirmReset()">✕ RESET ALL DATA</button>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">How To Use</div>
+      <div class="howto">
+        <b>Click any card</b> to expand/collapse downlines.<br>
+        <b>Ranks auto-update</b> using KEDI's balanced-leg rules.<br>
+        <b>Progress panel</b> shows what you need for the next rank.<br>
+        <b>Drive sync</b> — connect Google once; auto-saves every change.<br>
+        <b>Share:</b> create a blank copy for downlines to use.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">KEDI Rank Rules</div>
+      <div class="rules">
+        <span class="tier-label">── CONSULTANT (balanced legs) ──</span>
+        <b>★4</b> — ★3 on each of 3 legs<br>
+        <b>★5</b> — ★4 on each of 3 legs<br>
+        <b>★6</b> — ★5 on each of 3 legs + 1 extra ★5<br>
+        <b>★7</b> — ★6 on each of 3 legs + 1 extra ★6<br>
+        <b>★8</b> — ★7 on each of 3 legs + 1 extra ★7
+        <span class="tier-label">── MANAGER ──</span>
+        <b>★1 Mgr</b> — ★8 on any 2 legs<br>
+        <b>★2 Mgr</b> — ★8 on all 3 legs<br>
+        <b>★3 Mgr</b> — 4× ★8 across legs
+        <span class="tier-label">── DIRECTOR ──</span>
+        <b>★1 Dir</b> — 5× ★8 · <b>★2</b> — 6× · <b>★3</b> — 7×<br>
+        <b>★4 Dir</b> — 8× ★8 · <b>★5</b> — 10× ★8
+        <span class="tier-label">── HONORARY ──</span>
+        <b>Hon. Chairman</b> — 4× ★3 Manager
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">All Members</div>
+      <div class="member-list" id="memberList"></div>
+    </div>
+
+  </div>
+
+  <div class="tree-area" id="treeArea">
+    <div class="empty"><div class="empty-icon">🌐</div>Loading your network...</div>
+  </div>
+</div>
+
+<!-- RESET MODAL -->
+<div class="modal-overlay" id="modalReset" style="display:none">
+  <div class="modal">
+    <h3 class="danger">⚠ RESET ALL DATA</h3>
+    <p>This will permanently delete all members except the root. This cannot be undone.</p>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModals()">CANCEL</button>
+      <button class="mbtn-confirm" onclick="resetData()">YES, RESET</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-overlay" id="modalShare" style="display:none">
+  <div class="modal">
+    <h3 class="share">⬆ CREATE BLANK COPY</h3>
+    <p>Enter the new root member's details. A blank copy of this tracker will download with only that person — ready for any downline to use as their own tracker.</p>
+    <div class="form-row"><label>ROOT MEMBER ID</label><input id="shareId" placeholder="e.g. 1158899" autocomplete="off"/></div>
+    <div class="form-row"><label>ROOT MEMBER NAME</label><input id="shareName" placeholder="e.g. Nwafor Kenneth 76" autocomplete="off"/></div>
+    <div class="form-row"><label>PERSONAL PV</label><input id="sharePV" type="number" placeholder="e.g. 260" min="0"/></div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeModals()">CANCEL</button>
+      <button class="mbtn-share" onclick="generateBlankCopy()">DOWNLOAD BLANK COPY</button>
+    </div>
+  </div>
+</div>
+
+<!-- Google API -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────
+// IMPORTANT: To enable Google Drive sync, you need a free Google Cloud
+// API key. Steps (takes ~5 minutes):
+// 1. Go to https://console.cloud.google.com
+// 2. Create a new project (e.g. "KEDI StarTrack")
+// 3. Enable "Google Drive API" and "Google Picker API"
+// 4. Create OAuth 2.0 credentials (Web application)
+//    - Add your file's URL or "http://localhost" to Authorized origins
+// 5. Paste your Client ID below
+// ─────────────────────────────────────────────────────────────────────
+var GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE'; // <-- paste here
+var DRIVE_FILENAME   = 'KEDI_StarTrack_Data.json';
+var STORE_KEY        = 'kedi_startrack_v2';
+var DRIVE_TOKEN_KEY  = 'kedi_drive_token';
+var DRIVE_FILE_KEY   = 'kedi_drive_fileid';
+
+// ── APP STATE ─────────────────────────────────────────────────────────
+var members  = {};
+var expanded = new Set();
+var _rc      = {};
+var driveAccessToken = null;
+var driveFileId      = null;
+var driveUser        = null;
+var autoSyncTimer    = null;
+var gapiReady        = false;
+
+// ── RANK HELPERS ──────────────────────────────────────────────────────
+function rankLabel(r){return['','','','★3 Consultant','★4 Consultant','★5 Consultant','★6 Consultant','★7 Consultant','★8 Consultant','★1 Manager','★2 Manager','★3 Manager','★1 Director','★2 Director','★3 Director','★4 Director','★5 Director','Honorary Chairman'][r]||'★3 Consultant';}
+function rankShort(r){return['','','','★3 C','★4 C','★5 C','★6 C','★7 C','★8 C','★1 Mgr','★2 Mgr','★3 Mgr','★1 Dir','★2 Dir','★3 Dir','★4 Dir','★5 Dir','Hon.Chair'][r]||'★3 C';}
+function rankColor(r){var m={3:'var(--c3)',4:'var(--c4)',5:'var(--c5)',6:'var(--c6)',7:'var(--c7)',8:'var(--c8)',9:'var(--cm1)',10:'var(--cm2)',11:'var(--cm3)',12:'var(--cd1)',13:'var(--cd2)',14:'var(--cd3)',15:'var(--cd4)',16:'var(--cd5)',17:'var(--chc)'};return m[r]||'var(--c3)';}
+
+// ── PV ────────────────────────────────────────────────────────────────
+function totalPV(id,seen){seen=seen||new Set();if(seen.has(id)||!members[id])return 0;seen.add(id);var m=members[id];return m.pv+m.children.reduce(function(s,c){return s+totalPV(c,seen);},0);}
+
+// ── RANK ENGINE ───────────────────────────────────────────────────────
+function bestRankInLeg(legId){if(!members[legId])return 0;var best=getrank(legId);members[legId].children.forEach(function(cid){var b=bestRankInLeg(cid);if(b>best)best=b;});return best;}
+function legsWithRank(id,minR){if(!members[id])return 0;var c=0;members[id].children.forEach(function(cid){if(bestRankInLeg(cid)>=minR)c++;});return c;}
+function totalAcrossLegs(id,minR){if(!members[id])return 0;var c=0;function walk(nid){if(!members[nid])return;if(getrank(nid)>=minR)c++;members[nid].children.forEach(walk);}members[id].children.forEach(walk);return c;}
+
+function getrank(id){
+  if(_rc[id]!==undefined)return _rc[id];
+  if(!members[id])return(_rc[id]=3);
+  var nl=members[id].children.length,r=3;
+  if(nl>=3&&legsWithRank(id,3)>=3)r=4;
+  if(r>=4&&nl>=3&&legsWithRank(id,4)>=3)r=5;
+  if(r>=5&&nl>=3&&legsWithRank(id,5)>=3&&totalAcrossLegs(id,5)>=4)r=6;
+  if(r>=6&&nl>=3&&legsWithRank(id,6)>=3&&totalAcrossLegs(id,6)>=4)r=7;
+  if(r>=7&&nl>=3&&legsWithRank(id,7)>=3&&totalAcrossLegs(id,7)>=4)r=8;
+  if(r>=8&&legsWithRank(id,8)>=2)r=9;
+  if(r>=9&&legsWithRank(id,8)>=3)r=10;
+  if(r>=10&&totalAcrossLegs(id,8)>=4)r=11;
+  if(r>=11&&totalAcrossLegs(id,8)>=5)r=12;
+  if(r>=12&&totalAcrossLegs(id,8)>=6)r=13;
+  if(r>=13&&totalAcrossLegs(id,8)>=7)r=14;
+  if(r>=14&&totalAcrossLegs(id,8)>=8)r=15;
+  if(r>=15&&totalAcrossLegs(id,8)>=10)r=16;
+  if(totalAcrossLegs(id,11)>=4)r=17;
+  return(_rc[id]=r);
+}
+
+// ── PROGRESS ──────────────────────────────────────────────────────────
+function buildProgress(){
+  var rs=roots();if(!rs.length)return'<span style="color:var(--muted)">No root found</span>';
+  var id=rs[0];_rc={};var r=getrank(id);var nl=members[id].children.length;
+  if(r>=17)return'<b style="color:var(--chc)">🏆 Honorary Chairman achieved!</b>';
+  var html='<div class="prk">CURRENT: '+rankLabel(r)+'</div>';
+  if(r<4){html+=rLP('Need ★3 on each of 3 legs',legsWithRank(id,3),3,nl);}
+  else if(r<5){html+=rLP('Need ★4 on each of 3 legs',legsWithRank(id,4),3,nl);}
+  else if(r<6){html+=rLP('★5 on each of 3 legs',legsWithRank(id,5),3,nl);html+=rCP('Extra ★5 (4 total needed)',totalAcrossLegs(id,5),4);}
+  else if(r<7){html+=rLP('★6 on each of 3 legs',legsWithRank(id,6),3,nl);html+=rCP('Extra ★6 (4 total needed)',totalAcrossLegs(id,6),4);}
+  else if(r<8){html+=rLP('★7 on each of 3 legs',legsWithRank(id,7),3,nl);html+=rCP('Extra ★7 (4 total needed)',totalAcrossLegs(id,7),4);}
+  else if(r<9){html+=rLP('★8 on 2 legs for ★1 Mgr',legsWithRank(id,8),2,nl);}
+  else if(r<10){html+=rLP('★8 on all 3 legs for ★2 Mgr',legsWithRank(id,8),3,nl);}
+  else if(r<11){html+=rCP('4× ★8 total for ★3 Mgr',totalAcrossLegs(id,8),4);}
+  else{var needs=[5,6,7,8,10];var req=needs[Math.min(r-12,4)]||10;html+=rCP(req+'× ★8 for '+rankLabel(r+1),totalAcrossLegs(id,8),req);if(r>=16){html+=rCP('4× ★3 Mgr for Hon.Chair',totalAcrossLegs(id,11),4);}}
+  return html;
+}
+function rLP(label,have,need,nl){var pct=Math.min(100,Math.round(have/need*100));var col=have>=need?'var(--c5)':'var(--c6)';var tk=have>=need?'<span class="leg-ok">✓</span>':'<span class="leg-no">✗</span>';return'<div style="margin-top:5px"><div style="font-size:.7rem;margin-bottom:3px">'+tk+' '+label+' ('+have+'/'+need+')</div><div class="leg-row"><div class="leg-bar-wrap"><div class="leg-bar" style="width:'+pct+'%;background:'+col+'"></div></div><span style="font-size:.65rem;color:'+col+';min-width:28px;text-align:right">'+have+'/'+need+'</span></div></div>';}
+function rCP(label,have,need){var pct=Math.min(100,Math.round(have/need*100));var col=have>=need?'var(--c5)':'var(--c6)';var tk=have>=need?'<span class="leg-ok">✓</span>':'<span class="leg-no">✗</span>';return'<div style="margin-top:5px"><div style="font-size:.7rem;margin-bottom:3px">'+tk+' '+label+'</div><div class="leg-row"><div class="leg-bar-wrap"><div class="leg-bar" style="width:'+pct+'%;background:'+col+'"></div></div><span style="font-size:.65rem;color:'+col+';min-width:28px;text-align:right">'+have+'/'+need+'</span></div></div>';}
+
+// ── LOCAL STORAGE ─────────────────────────────────────────────────────
+function saveLocal(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify({members:members,expanded:Array.from(expanded)}));setLocalIndicator('saved');}
+  catch(e){toast('Local save failed','warn');}
+}
+function loadLocal(){
+  try{var raw=localStorage.getItem(STORE_KEY);if(raw){var p=JSON.parse(raw);members=p.members||{};expanded=new Set(p.expanded||[]);var rs=roots();if(rs.length)expanded.add(rs[0]);setLocalIndicator('saved');return true;}}catch(e){}
+  return false;
+}
+function setLocalIndicator(state){
+  var dot=document.getElementById('localDot');var lbl=document.getElementById('localLabel');
+  if(state==='saved'){dot.className='dot green';lbl.textContent='LOCAL: SAVED';}
+  else if(state==='saving'){dot.className='dot yellow';lbl.textContent='LOCAL: SAVING';}
+  else{dot.className='dot red';lbl.textContent='LOCAL: ERROR';}
+}
+
+// ── GOOGLE DRIVE ──────────────────────────────────────────────────────
+function gapiLoaded(){
+  gapi.load('client',function(){
+    gapi.client.init({discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']})
+    .then(function(){gapiReady=true;tryRestoreSession();});
+  });
+}
+
+function tryRestoreSession(){
+  var saved=localStorage.getItem(DRIVE_TOKEN_KEY);
+  driveFileId=localStorage.getItem(DRIVE_FILE_KEY)||null;
+  if(saved){
+    try{
+      var parsed=JSON.parse(saved);
+      if(parsed.token&&parsed.expiry>Date.now()){
+        driveAccessToken=parsed.token;driveUser=parsed.user||{};
+        gapi.client.setToken({access_token:driveAccessToken});
+        showDriveConnected();
+        return;
+      }
+    }catch(e){}
+  }
+  showDriveDisconnected();
+}
+
+function driveSignIn(){
+  if(GOOGLE_CLIENT_ID==='YOUR_GOOGLE_CLIENT_ID_HERE'){
+    showSetupInstructions();return;
+  }
+  var client=google.accounts.oauth2.initTokenClient({
+    client_id:GOOGLE_CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/drive.file profile email',
+    callback:function(response){
+      if(response.error){toast('Google sign-in failed: '+response.error,'warn');return;}
+      driveAccessToken=response.access_token;
+      gapi.client.setToken({access_token:driveAccessToken});
+      // Get user info
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+driveAccessToken}})
+      .then(function(r){return r.json();})
+      .then(function(info){
+        driveUser={name:info.name||'',email:info.email||''};
+        var expiry=Date.now()+(response.expires_in||3600)*1000;
+        localStorage.setItem(DRIVE_TOKEN_KEY,JSON.stringify({token:driveAccessToken,expiry:expiry,user:driveUser}));
+        showDriveConnected();
+        driveSaveNow();
+        toast('Google Drive connected!','drive');
+      }).catch(function(){showDriveConnected();});
+    }
+  });
+  client.requestAccessToken();
+}
+
+function driveSignOut(){
+  driveAccessToken=null;driveUser=null;driveFileId=null;
+  localStorage.removeItem(DRIVE_TOKEN_KEY);
+  localStorage.removeItem(DRIVE_FILE_KEY);
+  gapi.client.setToken('');
+  showDriveDisconnected();
+  toast('Google Drive disconnected');
+}
+
+function showDriveConnected(){
+  document.getElementById('driveSignedOut').style.display='none';
+  document.getElementById('driveSignedIn').style.display='block';
+  document.getElementById('headerDriveBtn').style.display='none';
+  if(driveUser){
+    document.getElementById('driveUserName').textContent=driveUser.name||'Connected';
+    document.getElementById('driveUserEmail').textContent=driveUser.email||'';
+  }
+  var dot=document.getElementById('driveDot');var lbl=document.getElementById('driveLabel');
+  dot.className='dot green';lbl.textContent='DRIVE: CONNECTED';
+}
+
+function showDriveDisconnected(){
+  document.getElementById('driveSignedOut').style.display='block';
+  document.getElementById('driveSignedIn').style.display='none';
+  document.getElementById('headerDriveBtn').style.display='flex';
+  var dot=document.getElementById('driveDot');var lbl=document.getElementById('driveLabel');
+  dot.className='dot';lbl.textContent='DRIVE: NOT CONNECTED';
+}
+
+function setDriveStatus(state,msg){
+  var dot=document.getElementById('driveDot');var lbl=document.getElementById('driveLabel');
+  if(state==='syncing'){dot.className='dot yellow';lbl.textContent='DRIVE: SYNCING...';}
+  else if(state==='synced'){dot.className='dot green';lbl.textContent='DRIVE: SYNCED';
+    var t=new Date().toLocaleTimeString();document.getElementById('driveLastSync').textContent='Last sync: '+t;}
+  else if(state==='error'){dot.className='dot red';lbl.textContent='DRIVE: ERROR';}
+}
+
+async function driveSaveNow(){
+  if(!driveAccessToken){toast('Connect Google Drive first','warn');return;}
+  setDriveStatus('syncing');
+  var payload=JSON.stringify({members:members,expanded:Array.from(expanded),savedAt:new Date().toISOString()});
+  try{
+    if(driveFileId){
+      // Update existing file
+      await fetch('https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=media',{
+        method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+driveAccessToken},body:payload
+      });
+    } else {
+      // Search for existing file first
+      var search=await fetch('https://www.googleapis.com/drive/v3/files?q=name%3D%22'+DRIVE_FILENAME+'%22+and+trashed%3Dfalse&fields=files(id,name)',{
+        headers:{Authorization:'Bearer '+driveAccessToken}
+      });
+      var searchData=await search.json();
+      if(searchData.files&&searchData.files.length>0){
+        driveFileId=searchData.files[0].id;
+        localStorage.setItem(DRIVE_FILE_KEY,driveFileId);
+        await fetch('https://www.googleapis.com/upload/drive/v3/files/'+driveFileId+'?uploadType=media',{
+          method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+driveAccessToken},body:payload
+        });
+      } else {
+        // Create new file with metadata
+        var meta=new Blob([JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'});
+        var content=new Blob([payload],{type:'application/json'});
+        var form=new FormData();
+        form.append('metadata',meta);form.append('file',content);
+        var res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+          method:'POST',headers:{Authorization:'Bearer '+driveAccessToken},body:form
+        });
+        var data=await res.json();
+        driveFileId=data.id;
+        localStorage.setItem(DRIVE_FILE_KEY,driveFileId);
+      }
+    }
+    setDriveStatus('synced');
+  }catch(e){setDriveStatus('error');toast('Drive save failed — check connection','warn');}
+}
+
+async function driveLoadNow(){
+  if(!driveAccessToken){toast('Connect Google Drive first','warn');return;}
+  setDriveStatus('syncing');
+  try{
+    var fid=driveFileId;
+    if(!fid){
+      var search=await fetch('https://www.googleapis.com/drive/v3/files?q=name%3D%22'+DRIVE_FILENAME+'%22+and+trashed%3Dfalse&fields=files(id)',{
+        headers:{Authorization:'Bearer '+driveAccessToken}
+      });
+      var sd=await search.json();
+      if(!sd.files||!sd.files.length){toast('No saved data found in Drive','warn');setDriveStatus('error');return;}
+      fid=sd.files[0].id;driveFileId=fid;localStorage.setItem(DRIVE_FILE_KEY,fid);
+    }
+    var res=await fetch('https://www.googleapis.com/drive/v3/files/'+fid+'?alt=media',{
+      headers:{Authorization:'Bearer '+driveAccessToken}
+    });
+    var data=await res.json();
+    members=data.members||{};
+    expanded=new Set(data.expanded||[]);
+    var rs=roots();if(rs.length)expanded.add(rs[0]);
+    saveLocal();_rc={};refresh();
+    setDriveStatus('synced');
+    toast('Network loaded from Google Drive','drive');
+  }catch(e){setDriveStatus('error');toast('Drive load failed','warn');}
+}
+
+// Auto-sync with debounce
+function scheduleAutoSync(){
+  if(!driveAccessToken)return;
+  clearTimeout(autoSyncTimer);
+  autoSyncTimer=setTimeout(function(){driveSaveNow();},3000);
+}
+
+function showSetupInstructions(){
+  toast('See setup instructions in the file — add your Google Client ID','warn');
+  window.open('https://console.cloud.google.com','_blank');
+}
+
+// ── PERSIST (combined) ────────────────────────────────────────────────
+function saveData(){saveLocal();scheduleAutoSync();}
+
+// ── ADD MEMBER ────────────────────────────────────────────────────────
+function addMember(){
+  var id=document.getElementById('fId').value.trim();
+  var name=document.getElementById('fName').value.trim();
+  var pv=parseFloat(document.getElementById('fPV').value)||0;
+  var sponsor=document.getElementById('fSponsor').value;
+  if(!id){toast('Member ID is required','warn');return;}
+  if(!name){toast('Member name is required','warn');return;}
+  if(!sponsor){toast('Please select a sponsor','warn');return;}
+  if(members[id]){toast('Member ID already exists','warn');return;}
+  members[id]={id:id,name:name,pv:pv,sponsor:sponsor,children:[]};
+  members[sponsor].children.push(id);
+  document.getElementById('fId').value='';
+  document.getElementById('fName').value='';
+  document.getElementById('fPV').value='';
+  expanded.add(sponsor);_rc={};saveData();refresh();
+  toast(name+' added — '+rankLabel(getrank(id)),'success');
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────
+function deleteMember(id){
+  var m=members[id];if(!m)return;
+  if(!m.sponsor){toast('Cannot remove the root member','warn');return;}
+  m.children.forEach(function(cid){members[cid].sponsor=m.sponsor;members[m.sponsor].children.push(cid);});
+  members[m.sponsor].children=members[m.sponsor].children.filter(function(c){return c!==id;});
+  expanded.delete(id);delete members[id];_rc={};saveData();refresh();
+  toast('Member removed');
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────
+function confirmReset(){document.getElementById('modalReset').style.display='flex';}
+function closeModals(){document.getElementById('modalReset').style.display='none';document.getElementById('modalShare').style.display='none';}
+function resetData(){
+  closeModals();var rs=roots();var root=rs.length?members[rs[0]]:null;
+  members={};expanded=new Set();
+  if(root){members[root.id]={id:root.id,name:root.name,pv:root.pv,sponsor:null,children:[]};expanded.add(root.id);}
+  _rc={};saveData();refresh();toast('Network reset — root kept','warn');
+}
+
+// ── SHARE: BLANK COPY ─────────────────────────────────────────────────
+function showShareModal(){document.getElementById('modalShare').style.display='flex';}
+function generateBlankCopy(){
+  var rid=document.getElementById('shareId').value.trim();
+  var rname=document.getElementById('shareName').value.trim();
+  var rpv=parseFloat(document.getElementById('sharePV').value)||260;
+  if(!rid||!rname){toast('Please enter ID and Name for the new root','warn');return;}
+  var src=document.documentElement.outerHTML;
+  var newKey='kedi_startrack_'+rid+'_v2';
+  src=src.replace("var STORE_KEY        = 'kedi_startrack_v2'","var STORE_KEY        = '"+newKey+"'");
+  // Remove Drive token restoration so blank copy starts fresh
+  src=src.replace("var GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE'","var GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE' /* Add your own Client ID */");
+  var newInit="(function init(){\n  var loaded=loadLocal();\n  if(!loaded||Object.keys(members).length===0){\n    var rootId='"+rid.replace(/'/g,"\\'")+
+    "';\n    members[rootId]={id:rootId,name:'"+rname.replace(/'/g,"\\'")+
+    "',pv:"+rpv+",sponsor:null,children:[]};\n    expanded.add(rootId);\n    saveLocal();\n  }\n  refresh();\n})();";
+  src=src.replace(/\(function init\(\)\{[\s\S]*?\}\)\(\);/,newInit);
+  var blob=new Blob([src],{type:'text/html'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='KEDI_StarTrack_'+rname.replace(/[^a-zA-Z0-9]/g,'_')+'.html';
+  a.click();closeModals();
+  document.getElementById('shareId').value='';
+  document.getElementById('shareName').value='';
+  document.getElementById('sharePV').value='';
+  toast('Blank copy downloaded for '+rname,'success');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────
+function exportCSV(){
+  _rc={};var rows=['ID,Name,Personal PV,Total PV,Sponsor ID,Sponsor Name,Rank'];
+  Object.values(members).forEach(function(m){var r=getrank(m.id);var sn=m.sponsor&&members[m.sponsor]?members[m.sponsor].name:'ROOT';rows.push([m.id,'"'+m.name.replace(/"/g,'""')+'"',m.pv,totalPV(m.id),m.sponsor||'','"'+sn.replace(/"/g,'""')+'"','"'+rankLabel(r)+'"'].join(','));});
+  var blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='KEDI_Downline_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('CSV exported','success');
+}
+
+// ── TREE ──────────────────────────────────────────────────────────────
+function toggleNode(id){if(expanded.has(id))expanded.delete(id);else expanded.add(id);_rc={};saveData();renderTree();}
+
+function buildNode(id){
+  var m=members[id];if(!m)return'';
+  var r=getrank(id);var tpv=totalPV(id);var col=rankColor(r);
+  var isExp=expanded.has(id);var hasKids=m.children.length>0;
+  var visKids=m.children.slice(0,3);var more=m.children.length-3;var isRoot=!m.sponsor;
+  var hint='';
+  if(hasKids){hint=isExp?'<div class="expand-hint" style="color:'+col+'">▲ collapse</div>':'<div class="expand-hint">▼ '+m.children.length+' downline'+(m.children.length>1?'s':'')+' — tap to expand</div>';}
+  else if(!isRoot){hint='<div class="expand-hint" style="color:var(--border)">no downlines yet</div>';}
+  var childrenHTML='';
+  if(isExp&&hasKids){
+    var colsHTML=visKids.map(function(cid){return'<div class="child-col"><div class="vline"></div>'+buildNode(cid)+'</div>';}).join('');
+    var bw=visKids.length>1?((visKids.length-1)*(182+18))+'px':'0';
+    var hbar=visKids.length>1?'<div style="display:flex;justify-content:center;"><div class="hline" style="width:'+bw+'"></div></div>':'';
+    var moreH=more>0?'<div style="text-align:center;font-size:.62rem;color:var(--muted);margin-top:8px;font-family:Orbitron,monospace;letter-spacing:1px">+'+more+' MORE DOWNLINE'+(more>1?'S':'')+'</div>':'';
+    childrenHTML='<div class="vline"></div>'+hbar+'<div class="children-row">'+colsHTML+'</div>'+moreH;
+  }
+  var sid=id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return'<div class="node-wrap"><div class="node-card'+(isRoot?' root-card':'')+'" style="border-color:'+col+'" onclick="toggleNode(\''+sid+'\')">'
+    +'<div class="node-rank" style="color:'+col+';border-color:'+col+'">'+rankLabel(r)+'</div>'
+    +'<div class="node-name">'+esc(m.name)+'</div>'
+    +'<div class="node-id">'+esc(m.id)+'</div>'
+    +'<div class="node-pv"><span>PV</span> '+m.pv+' &nbsp;|&nbsp; <span>Total</span> '+tpv+'</div>'
+    +hint+'</div>'+childrenHTML+'</div>';
+}
+
+function roots(){return Object.keys(members).filter(function(id){return!members[id].sponsor;});}
+function renderTree(){var area=document.getElementById('treeArea');var rs=roots();if(!rs.length){area.innerHTML='<div class="empty"><div class="empty-icon">🌐</div>No data.</div>';return;}area.innerHTML='<div class="tree-root">'+rs.map(buildNode).join('')+'</div>';}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────
+function refreshSidebar(){
+  var sel=document.getElementById('fSponsor');var cur=sel.value;
+  sel.innerHTML='<option value="">— Select Sponsor —</option>';
+  Object.values(members).forEach(function(m){var o=document.createElement('option');o.value=m.id;o.textContent=m.name+' ('+m.id+')';sel.appendChild(o);});
+  if(cur&&members[cur])sel.value=cur;
+  _rc={};
+  var ids=Object.keys(members);var ranks=ids.map(getrank);
+  var topR=ranks.length?Math.max.apply(null,ranks):0;
+  var allPV=Object.values(members).reduce(function(s,m){return s+m.pv;},0);
+  document.getElementById('sTotalM').textContent=ids.length;
+  document.getElementById('sTotalPV').textContent=allPV;
+  document.getElementById('sTopRank').textContent=topR?rankShort(topR):'—';
+  document.getElementById('sStar4').textContent=ranks.filter(function(r){return r>=4;}).length;
+  document.getElementById('progressBox').innerHTML=buildProgress();
+  var list=document.getElementById('memberList');
+  list.innerHTML=Object.values(members).map(function(m){
+    var r=getrank(m.id);var col=rankColor(r);var isRoot=!m.sponsor;
+    var del=isRoot?'':'<button class="mem-del" onclick="event.stopPropagation();deleteMember(\''+m.id.replace(/'/g,"\\'")+'\')">✕</button>';
+    return'<div class="mem-item" onclick="focusMember(\''+m.id.replace(/'/g,"\\'")+'\')"><div class="mem-info"><div class="mem-name">'+esc(m.name)+'</div><div class="mem-sub">'+esc(m.id)+' · PV '+m.pv+'</div></div><span class="badge" style="color:'+col+';border-color:'+col+';flex-shrink:0">'+rankShort(r)+'</span>'+del+'</div>';
+  }).join('')||'<div style="text-align:center;color:var(--muted);font-size:.76rem;padding:10px">No members yet</div>';
+}
+
+function focusMember(id){
+  expanded.add(id);_rc={};saveData();refresh();
+  setTimeout(function(){var cards=document.querySelectorAll('.node-card');for(var i=0;i<cards.length;i++){var el=cards[i].querySelector('.node-id');if(el&&el.textContent.trim()===id){cards[i].scrollIntoView({behavior:'smooth',block:'center'});var prev=cards[i].style.boxShadow;cards[i].style.boxShadow='0 0 0 3px '+rankColor(getrank(id));setTimeout(function(c,p){c.style.boxShadow=p;}.bind(null,cards[i],prev),1800);break;}}},80);
+}
+
+function refresh(){_rc={};refreshSidebar();renderTree();}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,type){var t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2900);}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+(function init(){
+  var loaded=loadLocal();
+  if(!loaded||Object.keys(members).length===0){
+    var rootId='1159192';
+    members[rootId]={id:rootId,name:'Ifeoma Maryann Nwobodo',pv:260,sponsor:null,children:[]};
+    expanded.add(rootId);saveLocal();
+  }
+  refresh();
+})();
+</script>
+</body>
+</html>
